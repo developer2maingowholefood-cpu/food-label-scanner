@@ -74,17 +74,9 @@ class AzureBlobService:
             # Upload the image
             blob_client.upload_blob(image_data, overwrite=True)
             
-            # Generate SAS token for secure access (optional, for private containers)
-            sas_token = self._generate_sas_token(blob_name)
-            
-            # Return the public URL or SAS URL
-            if sas_token:
-                url = f"{blob_client.url}?{sas_token}"
-            else:
-                url = blob_client.url
-            
+            # Store only the blob name, generate SAS token on-demand when needed
             return {
-                'url': url,
+                'url': None,  # Will be generated on-demand
                 'blob_name': blob_name,
                 'local_path': None
             }
@@ -186,8 +178,8 @@ class AzureBlobService:
             logging.error(f"Error deleting local file: {str(e)}")
         return False
     
-    def get_image_url(self, blob_name):
-        """Get the URL for an image."""
+    def get_image_url(self, blob_name, expiry_hours=720):  # 30 days default
+        """Get the URL for an image with fresh SAS token."""
         if self.is_local:
             return f"/local_storage/images/{blob_name}"
         
@@ -196,7 +188,16 @@ class AzureBlobService:
                 container=self.container_name, 
                 blob=blob_name
             )
-            return blob_client.url
+            
+            # Generate fresh SAS token on-demand
+            sas_token = self._generate_sas_token(blob_name, expiry_hours)
+            
+            if sas_token:
+                return f"{blob_client.url}?{sas_token}"
+            else:
+                # Fallback to direct URL if SAS generation fails
+                return blob_client.url
+                
         except Exception as e:
             logging.error(f"Error getting blob URL: {str(e)}")
             return None 
