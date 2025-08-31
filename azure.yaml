@@ -1,0 +1,2 @@
+language: python
+startupCommand: "gunicorn --chdir src app:app"

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(az webapp log show:*)",
+      "Bash(az webapp show:*)",
+      "Bash(git push:*)",
+      "Bash(az webapp log download:*)",
+      "Bash(unzip:*)",
+      "Bash(az webapp config set:*)",
+      "Bash(./run_local.sh:*)",
+      "Bash(python:*)",
+      "Bash(git commit:*)",
+      "Bash(docker exec:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": []
+  }
+}

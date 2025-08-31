@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>{% block title %}Food Label Scanner{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #f5f5f5; margin-top: 70px; padding-bottom: 80px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">Food Label Scanner</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          {% if current_user.is_authenticated %}
+            <li class="nav-item">
+              <a class="nav-link" href="/">Home</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/dashboard">Dashboard</a>
+            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Hi, {{ current_user.first_name or current_user.email.split('@')[0] }}
+              </a>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="/profile">Profile</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="/logout">Logout</a></li>
+              </ul>
+            </li>
+          {% else %}
+            <li class="nav-item">
+              <a class="nav-link" href="/login">Login</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/register">Register</a>
+            </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </nav>
+  {% block content %}{% endblock %}
+  
+  <!-- Version Footer (hidden on scan page) -->
+  {% block footer %}
+  <footer class="text-center py-1 mt-3" style="background-color: transparent;">
+    <small class="text-muted" style="font-size: 0.7rem; opacity: 0.7;">v{{ app_version }}</small>
+  </footer>
+  {% endblock %}
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  
+  {% if current_user.is_authenticated %}
+  <!-- Session Management JavaScript -->
+  <script>
+    class SessionManager {
+      constructor() {
+        this.sessionDuration = 60000; // 1 minute in milliseconds (60 * 1000)
+        this.warningTime = 30000; // 30 seconds before expiry
+        this.sessionTimer = null;
+        this.warningTimer = null;
+        this.warningShown = false;
+        
+        this.initSession();
+        this.attachEventListeners();
+      }
+      
+      initSession() {
+        console.log('Session Manager: Initializing session tracking');
+        this.resetSessionTimer();
+      }
+      
+      resetSessionTimer() {
+        // Clear existing timers
+        if (this.sessionTimer) clearTimeout(this.sessionTimer);
+        if (this.warningTimer) clearTimeout(this.warningTimer);
+        
+        this.warningShown = false;
+        
+        // Set warning timer (30 seconds before expiry)
+        this.warningTimer = setTimeout(() => {
+          this.showWarning();
+        }, this.sessionDuration - this.warningTime);
+        
+        // Set session expiry timer
+        this.sessionTimer = setTimeout(() => {
+          this.handleSessionExpiry();
+        }, this.sessionDuration);
+        
+        console.log('Session Manager: Session timer reset - expires in', this.sessionDuration / 1000, 'seconds');
+      }
+      
+      showWarning() {
+        if (this.warningShown) return;
+        this.warningShown = true;
+        
+        // Create warning modal
+        const modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.id = 'sessionWarningModal';
+        modal.setAttribute('data-bs-backdrop', 'static');
+        modal.setAttribute('data-bs-keyboard', 'false');
+        modal.innerHTML = `
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header bg-warning">
+                <h5 class="modal-title">⏰ Session Expiring Soon</h5>
+              </div>
+              <div class="modal-body">
+                <p>Your session will expire in <strong><span id="countdown">30</span> seconds</strong>.</p>
+                <p>Click "Stay Logged In" to continue your session, or you'll be automatically logged out.</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="sessionManager.logout()">Logout Now</button>
+                <button type="button" class="btn btn-primary" onclick="sessionManager.refreshSession()">Stay Logged In</button>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        document.body.appendChild(modal);
+        const modalInstance = new bootstrap.Modal(modal);
+        modalInstance.show();
+        
+        // Start countdown
+        this.startCountdown();
+      }
+      
+      startCountdown() {
+        let seconds = 30;
+        const countdownElement = document.getElementById('countdown');
+        
+        this.countdownInterval = setInterval(() => {
+          seconds--;
+          if (countdownElement) {
+            countdownElement.textContent = seconds;
+          }
+          
+          if (seconds <= 0) {
+            clearInterval(this.countdownInterval);
+          }
+        }, 1000);
+      }
+      
+      async refreshSession() {
+        try {
+          console.log('Session Manager: Attempting to refresh session...');
+          
+          const response = await fetch('/api/refresh-session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Session Manager: Session refreshed successfully', data);
+            
+            // Clear countdown interval
+            if (this.countdownInterval) {
+              clearInterval(this.countdownInterval);
+            }
+            
+            // Close warning modal
+            const modal = document.getElementById('sessionWarningModal');
+            if (modal) {
+              const modalInstance = bootstrap.Modal.getInstance(modal);
+              if (modalInstance) modalInstance.hide();
+              modal.remove();
+            }
+            
+            // Reset session timer
+            this.resetSessionTimer();
+            
+            // Show success message
+            this.showToast('Session refreshed successfully!', 'success');
+            
+          } else {
+            const errorData = await response.json();
+            console.error('Session Manager: Server error:', errorData);
+            throw new Error(errorData.error || 'Failed to refresh session');
+          }
+        } catch (error) {
+          console.error('Session Manager: Failed to refresh session:', error);
+          this.showToast('Failed to refresh session. You will be logged out.', 'danger');
+          setTimeout(() => this.handleSessionExpiry(), 2000);
+        }
+      }
+      
+      handleSessionExpiry() {
+        console.log('Session Manager: Session expired - redirecting to login');
+        
+        // Close any open modals
+        const modal = document.getElementById('sessionWarningModal');
+        if (modal) {
+          modal.remove();
+        }
+        
+        // Show expiry message and redirect
+        alert('Your session has expired. You will be redirected to the login page.');
+        window.location.href = '/logout';
+      }
+      
+      logout() {
+        window.location.href = '/logout';
+      }
+      
+      showToast(message, type = 'info') {
+        // Create toast notification
+        const toastContainer = document.getElementById('toast-container') || this.createToastContainer();
+        
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-bg-${type} border-0`;
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = `
+          <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+          </div>
+        `;
+        
+        toastContainer.appendChild(toast);
+        const toastInstance = new bootstrap.Toast(toast);
+        toastInstance.show();
+        
+        // Remove toast element after it's hidden
+        toast.addEventListener('hidden.bs.toast', () => {
+          toast.remove();
+        });
+      }
+      
+      createToastContainer() {
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container position-fixed top-0 end-0 p-3';
+        container.style.zIndex = '9999';
+        document.body.appendChild(container);
+        return container;
+      }
+      
+      attachEventListeners() {
+        // Reset session timer on user activity
+        const resetOnActivity = () => {
+          this.resetSessionTimer();
+        };
+        
+        // Add event listeners for user activity
+        document.addEventListener('click', resetOnActivity);
+        document.addEventListener('keypress', resetOnActivity);
+        document.addEventListener('scroll', resetOnActivity);
+        document.addEventListener('mousemove', resetOnActivity);
+        
+        // Reset on AJAX requests (if any)
+        if (window.fetch) {
+          const originalFetch = window.fetch;
+          window.fetch = (...args) => {
+            resetOnActivity();
+            return originalFetch.apply(window, args);
+          };
+        }
+      }
+    }
+    
+    // Session manager disabled for persistent login
+    // let sessionManager;
+    // document.addEventListener('DOMContentLoaded', function() {
+    //   sessionManager = new SessionManager();
+    // });
+  </script>
+  {% endif %}
+</body>
+</html> 

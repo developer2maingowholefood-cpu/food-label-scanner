@@ -1,0 +1,728 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<style>
+  :root {
+    --primary-color: #0d6efd;
+    --success-color: #198754;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #0dcaf0;
+    --border-radius: 12px;
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+    --transition: all 0.2s ease;
+  }
+
+  .dashboard-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+
+  .dashboard-header {
+    background: linear-gradient(135deg, var(--primary-color), #0a58ca);
+    color: white;
+    padding: 2rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-md);
+  }
+
+  .dashboard-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .dashboard-subtitle {
+    opacity: 0.9;
+    margin: 0.5rem 0 0 0;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+
+  .scans-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .scan-card {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    overflow: hidden;
+    border: 1px solid #e9ecef;
+  }
+
+  .scan-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+
+  .scan-card-header {
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .scan-date {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 500;
+  }
+
+  .scan-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .status-nogo {
+    background: #fff5f5;
+    color: var(--danger-color);
+    border: 1px solid #fecaca;
+  }
+
+  .status-healthy {
+    background: #f0fdf4;
+    color: var(--success-color);
+    border: 1px solid #bbf7d0;
+  }
+
+  .details-btn {
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: var(--transition);
+    border: 1px solid;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .details-nogo {
+    background: #fff5f5;
+    color: var(--danger-color);
+    border-color: #fecaca;
+  }
+
+  .details-nogo:hover {
+    background: var(--danger-color);
+    color: white;
+    transform: translateY(-1px);
+  }
+
+  .details-healthy {
+    background: #f0fdf4;
+    color: var(--success-color);
+    border-color: #bbf7d0;
+  }
+
+  .details-healthy:hover {
+    background: var(--success-color);
+    color: white;
+    transform: translateY(-1px);
+  }
+
+  .scan-image-container {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  .scan-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: var(--transition);
+  }
+
+  .scan-image:hover {
+    transform: scale(1.05);
+  }
+
+  .no-image-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background: #f8f9fa;
+    color: #6c757d;
+    font-size: 0.9rem;
+  }
+
+  .scan-content {
+    padding: 1rem;
+  }
+
+  .comment-preview {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 0.75rem;
+    border-left: 3px solid #0dcaf0;
+  }
+
+  .comment-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+
+  .comment-text {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: #495057;
+    flex: 1;
+  }
+
+
+  .card-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .action-group {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .btn-modern {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 38px;
+    text-decoration: none;
+  }
+
+  .btn-primary {
+    background: var(--primary-color);
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #0b5ed7;
+    transform: translateY(-1px);
+  }
+
+  .btn-success {
+    background: var(--success-color);
+    color: white;
+  }
+
+  .btn-success:hover {
+    background: #157347;
+  }
+
+  .btn-danger {
+    background: var(--danger-color);
+    color: white;
+  }
+
+  .btn-danger:hover {
+    background: #bb2d3b;
+  }
+
+  .btn-secondary {
+    background: #6c757d;
+    color: white;
+  }
+
+  .btn-secondary:hover {
+    background: #565e64;
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 2px solid currentColor;
+    color: #6c757d;
+  }
+
+  .btn-outline:hover {
+    background: #6c757d;
+    color: white;
+  }
+
+  .btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+    min-height: 32px;
+  }
+
+  .loading-spinner {
+    display: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .toast-container {
+    position: fixed;
+    top: 100px;
+    right: 1rem;
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .toast-modern {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+    border-left: 4px solid;
+    padding: 1rem;
+    max-width: 350px;
+    animation: slideIn 0.3s ease;
+  }
+
+  .toast-success {
+    border-left-color: var(--success-color);
+  }
+
+  .toast-error {
+    border-left-color: var(--danger-color);
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .empty-state-icon {
+    font-size: 4rem;
+    color: #dee2e6;
+    margin-bottom: 1rem;
+  }
+
+  .mobile-table-toggle {
+    display: none;
+    margin-bottom: 1rem;
+  }
+
+  .sort-controls {
+    margin-top: 0.5rem;
+  }
+
+  #sort-icon {
+    font-family: monospace;
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  @media (max-width: 768px) {
+    .dashboard-container {
+      padding: 0.5rem;
+    }
+
+    .dashboard-header {
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .dashboard-title {
+      font-size: 1.5rem;
+    }
+
+    .scans-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .scan-card-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .header-right {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    .card-actions {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .action-group {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-modern {
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      min-height: 44px;
+    }
+
+
+    .action-buttons {
+      flex-direction: column;
+    }
+
+    .toast-container {
+      left: 1rem;
+      right: 1rem;
+    }
+
+    .toast-modern {
+      max-width: none;
+    }
+
+    .mobile-table-toggle {
+      display: block;
+    }
+
+    .table-view {
+      display: none;
+    }
+
+    .table-view.active {
+      display: block;
+    }
+
+    .scans-grid.hide-mobile {
+      display: none;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .scan-image-container {
+      height: 150px;
+    }
+
+    .dashboard-header {
+      padding: 1rem;
+    }
+
+    .comment-preview {
+      padding: 0.6rem;
+    }
+
+    .comment-text {
+      font-size: 0.85rem;
+    }
+  }
+
+</style>
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <div class="d-flex justify-content-between align-items-start flex-wrap">
+      <div>
+        <h1 class="dashboard-title">My Scan History</h1>
+      </div>
+      {% if scans and scans|length > 0 %}
+      <div class="sort-controls">
+        <button id="sort-btn" class="btn-modern btn-outline" onclick="toggleSort()" title="Sort by date">
+          <span id="sort-icon">≡↓</span>
+        </button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="toast-modern toast-{{ 'success' if category=='success' else 'error' }} mb-3">
+          <div class="fw-bold">{{ 'Success!' if category=='success' else 'Error!' }}</div>
+          <div>{{ message }}</div>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  {% if scans and scans|length > 0 %}
+    <!-- View Toggle for Mobile -->
+    <!-- <div class="mobile-table-toggle">
+      <button id="toggle-view" class="btn-modern btn-outline w-100">
+        📱 Switch to Table View
+      </button>
+    </div> -->
+
+    <!-- Card View (Default) -->
+    <div class="scans-grid" id="cards-view">
+      {% for scan in scans %}
+        <div class="scan-card" data-scan-id="{{ scan.id }}">
+          <!-- Card Header -->
+          <div class="scan-card-header">
+            <div class="scan-date">
+              📅 {{ scan.timestamp.strftime('%Y-%m-%d %H:%M') }}
+            </div>
+            <div class="header-right">
+              <div class="scan-status {{ 'status-nogo' if scan.scan_data['recommendation']['flag'] == 'NoGo' else 'status-healthy' }}">
+                {{ scan.scan_data['recommendation']['flag'] if scan.scan_data['recommendation']['flag'] == 'NoGo' else 'Healthy' }}
+              </div>
+              <a href="{{ url_for('scan_detail', scan_id=scan.id) }}" class="details-btn {{ 'details-nogo' if scan.scan_data['recommendation']['flag'] == 'NoGo' else 'details-healthy' }}">
+                Details
+              </a>
+            </div>
+          </div>
+
+          <!-- Image Section -->
+          <div class="scan-image-container" onclick="openImageModal('{{ scan.image_url }}')">
+            {% if scan.image_url %}
+              <img src="{{ scan.image_url }}" alt="Scan Image" class="scan-image">
+            {% else %}
+              <div class="no-image-placeholder">
+                📷 No image available
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Card Content -->
+          <div class="scan-content">
+            <!-- Comments removed from dashboard - users can view them in scan details -->
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Table View (Hidden by default on mobile) -->
+    <div class="table-view" id="table-view">
+      <div class="table-responsive shadow-sm">
+        <table class="table table-striped table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Image</th>
+              <th>Result</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for scan in scans %}
+              <tr>
+                <td>{{ scan.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                  {% if scan.image_url %}
+                    <img src="{{ scan.image_url }}" alt="Scan Image" class="scan-img-thumb" onclick="openImageModal('{{ scan.image_url }}')">
+                  {% else %}
+                    <span class="text-muted">No image</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% set flag = scan.scan_data['recommendation']['flag'] %}
+                  {% if flag == 'NoGo' %}
+                    <span class="badge bg-danger">NoGo</span>
+                  {% else %}
+                    <span class="badge bg-success">Healthy</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <a href="{{ url_for('scan_detail', scan_id=scan.id) }}" class="btn btn-info btn-sm">Details</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Image Modal -->
+    <div class="modal fade" id="imgModal" tabindex="-1" aria-labelledby="imgModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">📷 Scan Image</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-0">
+            <img id="modalImg" src="" alt="Scan Image" class="img-fluid w-100">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Enhanced Dashboard JavaScript
+      let isTableView = false;
+      let sortOrder = 'newest'; // 'newest' or 'oldest'
+
+      // Initialize on page load
+      document.addEventListener('DOMContentLoaded', function() {
+        // Always start with card view as it has full functionality
+        showCardView();
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+          // Keep current view on resize
+        });
+      });
+
+      // // View toggle functionality
+      // document.getElementById('toggle-view')?.addEventListener('click', function() {
+      //   if (isTableView) {
+      //     showCardView();
+      //   } else {
+      //     showTableView();
+      //   }
+      // });
+
+      function showCardView() {
+        document.getElementById('cards-view').style.display = 'grid';
+        document.getElementById('table-view').style.display = 'none';
+        document.getElementById('toggle-view').innerHTML = '📱 Switch to Table View';
+        isTableView = false;
+      }
+
+      // function showTableView() {
+      //   document.getElementById('cards-view').style.display = 'none';
+      //   document.getElementById('table-view').style.display = 'block';
+      //   document.getElementById('toggle-view').innerHTML = '🃏 Switch to Card View';
+      //   isTableView = true;
+      // }
+
+      // Image modal functionality
+      function openImageModal(imageUrl) {
+        if (imageUrl && imageUrl !== 'None') {
+          document.getElementById('modalImg').src = imageUrl;
+          const modal = new bootstrap.Modal(document.getElementById('imgModal'));
+          modal.show();
+        }
+      }
+
+
+      // Sort functionality
+      function toggleSort() {
+        const sortBtn = document.getElementById('sort-btn');
+        const sortIcon = document.getElementById('sort-icon');
+        const cardsView = document.getElementById('cards-view');
+        const tableView = document.getElementById('table-view');
+        
+        // Toggle sort order
+        if (sortOrder === 'newest') {
+          sortOrder = 'oldest';
+          sortIcon.innerHTML = '≡↑'; // Bars with up arrow for oldest first
+        } else {
+          sortOrder = 'newest';
+          sortIcon.innerHTML = '≡↓'; // Bars with down arrow for newest first
+        }
+        
+        // Sort cards
+        const cards = Array.from(cardsView.children);
+        cards.sort((a, b) => {
+          const dateA = a.querySelector('.scan-date').textContent.replace('📅 ', '');
+          const dateB = b.querySelector('.scan-date').textContent.replace('📅 ', '');
+          
+          const timestampA = new Date(dateA).getTime();
+          const timestampB = new Date(dateB).getTime();
+          
+          if (sortOrder === 'newest') {
+            return timestampB - timestampA;
+          } else {
+            return timestampA - timestampB;
+          }
+        });
+        
+        // Re-append sorted cards
+        cards.forEach(card => cardsView.appendChild(card));
+        
+        // Sort table rows if table view exists
+        if (tableView) {
+          const tbody = tableView.querySelector('tbody');
+          if (tbody) {
+            const rows = Array.from(tbody.children);
+            rows.sort((a, b) => {
+              const dateA = a.cells[0].textContent;
+              const dateB = b.cells[0].textContent;
+              
+              const timestampA = new Date(dateA).getTime();
+              const timestampB = new Date(dateB).getTime();
+              
+              if (sortOrder === 'newest') {
+                return timestampB - timestampA;
+              } else {
+                return timestampA - timestampB;
+              }
+            });
+            
+            // Re-append sorted rows
+            rows.forEach(row => tbody.appendChild(row));
+          }
+        }
+        
+      }
+
+      // Add touch-friendly interactions for mobile
+      if ('ontouchstart' in window) {
+        document.querySelectorAll('.btn-modern').forEach(btn => {
+          btn.addEventListener('touchstart', function() {
+            this.style.transform = 'scale(0.95)';
+          });
+          
+          btn.addEventListener('touchend', function() {
+            this.style.transform = '';
+          });
+        });
+      }
+    </script>
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">📄</div>
+      <h3>No scans yet!</h3>
+      <p class="text-muted mb-4">Start scanning food labels to track your nutrition journey.</p>
+      <a href="/" class="btn-modern btn-primary">🚀 Start Scanning</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %} 

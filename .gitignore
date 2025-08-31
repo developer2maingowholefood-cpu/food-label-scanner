@@ -1,0 +1,83 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.Python
+
+# Build/Dist
+build/
+dist/
+*.egg-info/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+develop-eggs/
+downloads/
+eggs/
+.installed.cfg
+
+# Environment & Config
+.env
+src/config.json
+test-local.env
+azure-production.env
+azure-local.env
+
+
+# Data & Uploads
+data/
+uploads/
+temp/
+archive/
+local_storage/
+
+# Database
+instance/
+*.db
+
+# Logs
+*.log
+LogFiles/
+deployments/
+
+# IDEs & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# Project Specific
+nogo_checker_tester.ipynb
+
+# Local/backup environment files
+.env.backup
+.env.broken
+
+# Local SQL query files
+sql_queries/
+
+# Temporary files and archives
+app.zip
+current_plan.md
+*\ 2.*
+*\ 2/
+
+# Migration scripts (once used)
+migrate_dev_database.py
+create_dev_tables_direct.py

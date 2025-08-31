@@ -1,0 +1,6 @@
+{
+    "azure": {
+    "endpoint": "https://your-form-recognizer-endpoint.cognitiveservices.azure.com/",
+    "key": "your-form-recognizer-key"
+    }
+    }

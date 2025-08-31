@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% block title %}User Profile{% endblock %}
+{% block content %}
+<style>
+  /* Tab styling */
+  .profile-tabs {
+    display: flex;
+    background: #f8f9fa;
+    border-radius: 8px 8px 0 0;
+    border: 1px solid #e9ecef;
+    border-bottom: none;
+  }
+  
+  .profile-tab {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 3px solid transparent;
+  }
+  
+  .profile-tab:hover {
+    background: #e9ecef;
+    color: #495057;
+  }
+  
+  .profile-tab.active {
+    background: white;
+    color: #198754;
+    border-bottom-color: #198754;
+  }
+  
+  .profile-tab-content {
+    display: none;
+    padding: 1.5rem;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 0 0 8px 8px;
+  }
+  
+  .profile-tab-content.active {
+    display: block;
+  }
+</style>
+
+<div class="container mt-5" style="max-width: 700px;">
+  <h2 class="mb-4 text-center">User Profile</h2>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  
+  <div class="card">
+    <div class="profile-tabs">
+      <button class="profile-tab active" onclick="switchProfileTab('basic', event)">
+        👤 Basic Info
+      </button>
+      <button class="profile-tab" onclick="switchProfileTab('preferences', event)">
+        ⚙️ App Preferences
+      </button>
+    </div>
+    
+    <!-- Basic Info Tab -->
+    <div id="basic-tab" class="profile-tab-content active">
+      <form method="POST">
+        <input type="hidden" name="tab" value="basic">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="first_name" class="form-label">First Name *</label>
+            <input type="text" class="form-control" id="first_name" name="first_name" 
+                   value="{{ current_user.first_name or '' }}" required>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="last_name" class="form-label">Last Name</label>
+            <input type="text" class="form-control" id="last_name" name="last_name" 
+                   value="{{ current_user.last_name or '' }}">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label for="email" class="form-label">Email address *</label>
+          <input type="email" class="form-control" id="email" name="email" 
+                 value="{{ current_user.email }}" required>
+        </div>
+        <div class="mb-3">
+          <label for="date_of_birth" class="form-label">Date of Birth</label>
+          <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" 
+                 value="{{ current_user.date_of_birth.strftime('%Y-%m-%d') if current_user.date_of_birth else '' }}">
+        </div>
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary">Update Profile</button>
+        </div>
+      </form>
+      
+      <hr class="my-4">
+      
+      <div class="text-center">
+        <h5 class="mb-3">Change Password</h5>
+        <a href="{{ url_for('forgot_password') }}" class="btn btn-outline-secondary">
+          Reset Password
+        </a>
+      </div>
+    </div>
+    
+    <!-- App Preferences Tab -->
+    <div id="preferences-tab" class="profile-tab-content">
+      <form method="POST">
+        <input type="hidden" name="tab" value="preferences">
+        <div class="mb-4">
+          <h5 class="text-center mb-3">🎯 Personalized Ingredient Analysis</h5>
+          <p class="text-muted text-center mb-4">
+            Help us provide more relevant ingredient explanations by sharing your health profile.
+          </p>
+        </div>
+        
+        <div class="mb-3">
+          <label for="health_conditions" class="form-label">Health Conditions</label>
+          <textarea class="form-control" id="health_conditions" name="health_conditions" rows="4"
+                    placeholder="e.g., diabetes, hypertension, food allergies, heart disease, high cholesterol, gluten intolerance">{{ current_user.health_conditions or '' }}</textarea>
+          <div class="form-text">Tell us about any health conditions so we can provide more relevant ingredient explanations</div>
+        </div>
+        
+        <div class="alert alert-info">
+          <small>
+            <strong>Privacy Note:</strong> This information is used only to personalize ingredient explanations 
+            and is never shared with third parties. You can update or clear this information at any time.
+          </small>
+        </div>
+        
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-success">Save Preferences</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <div class="mt-3 text-center">
+    <a href="{{ url_for('home') }}" class="btn btn-link">← Back to Dashboard</a>
+  </div>
+</div>
+
+<script>
+function switchProfileTab(tabName, event) {
+  // Remove active class from all tabs and content
+  document.querySelectorAll('.profile-tab').forEach(tab => tab.classList.remove('active'));
+  document.querySelectorAll('.profile-tab-content').forEach(content => content.classList.remove('active'));
+  
+  // Add active class to clicked tab and corresponding content
+  event.target.classList.add('active');
+  document.getElementById(tabName + '-tab').classList.add('active');
+}
+
+// Check if URL has #preferences fragment and switch to preferences tab
+if (window.location.hash === '#preferences') {
+  switchProfileTab('preferences', { target: document.querySelector('button[onclick*="preferences"]') });
+}
+</script>
+{% endblock %}

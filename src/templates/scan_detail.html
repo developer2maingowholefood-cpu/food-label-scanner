@@ -1,0 +1,815 @@
+{% extends 'base.html' %}
+{% block title %}Scan Details{% endblock %}
+{% block content %}
+<style>
+  /* Scrollable flagged ingredients for dashboard */
+  .dashboard-flagged-ingredients-scroll {
+    max-height: 160px;
+    overflow-y: auto;
+    margin-top: 0.5rem;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.8);
+  }
+  
+  .dashboard-flagged-ingredient-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid rgba(220, 53, 69, 0.1);
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+  }
+  
+  .dashboard-flagged-ingredient-item:last-child {
+    border-bottom: none;
+  }
+  
+  .dashboard-flagged-ingredient-item:hover {
+    background: rgba(220, 53, 69, 0.1);
+    transform: translateY(-1px);
+  }
+
+  .dashboard-flagged-ingredient-item:active {
+    transform: translateY(0);
+  }
+  
+  .dashboard-ingredient-flag-number {
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(220, 53, 69, 0.3);
+  }
+  
+  .dashboard-ingredient-flag-text {
+    color: #dc3545;
+    font-weight: 600;
+    font-size: 0.9rem;
+    line-height: 1.3;
+    flex: 1;
+  }
+  
+  /* Custom scrollbar styling for dashboard */
+  .dashboard-flagged-ingredients-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .dashboard-flagged-ingredients-scroll::-webkit-scrollbar-track {
+    background: rgba(220, 53, 69, 0.1);
+    border-radius: 3px;
+  }
+  
+  .dashboard-flagged-ingredients-scroll::-webkit-scrollbar-thumb {
+    background: rgba(220, 53, 69, 0.4);
+    border-radius: 3px;
+  }
+  
+  .dashboard-flagged-ingredients-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(220, 53, 69, 0.6);
+  }
+  
+  @media (max-width: 480px) {
+    .dashboard-flagged-ingredients-scroll {
+      max-height: 140px;
+    }
+    
+    .dashboard-flagged-ingredient-item {
+      padding: 0.5rem 0.7rem;
+      gap: 0.5rem;
+    }
+    
+    .dashboard-ingredient-flag-number {
+      width: 20px;
+      height: 20px;
+      font-size: 0.7rem;
+    }
+    
+    .dashboard-ingredient-flag-text {
+      font-size: 0.85rem;
+    }
+  }
+
+  /* Tabbed Card Styles */
+  .tabbed-result-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+    border: 1px solid #e9ecef;
+    overflow: hidden;
+  }
+
+  .tab-header {
+    display: flex;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  .tab-button {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 3px solid transparent;
+  }
+
+  .tab-button:hover {
+    background: #e9ecef;
+    color: #495057;
+  }
+
+  .tab-button.active {
+    background: white;
+    color: #198754;
+    border-bottom-color: #198754;
+  }
+
+  .tab-content {
+    padding: 1.5rem;
+  }
+
+  .tab-pane {
+    display: none;
+  }
+
+  .tab-pane.active {
+    display: block;
+  }
+
+  /* Ingredient explanation modal */
+  .ingredient-modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+  }
+
+  .ingredient-modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 0;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease-out;
+    position: relative;
+  }
+
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-50px) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .ingredient-modal-header {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 16px 16px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .ingredient-modal-title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .ingredient-modal-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+  }
+
+  .ingredient-modal-close:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .ingredient-modal-body {
+    padding: 1.5rem;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .ingredient-explanation {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #495057;
+    margin: 0;
+  }
+
+
+  .ingredient-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 2rem;
+    color: #6c757d;
+  }
+
+  .ingredient-loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e9ecef;
+    border-left: 2px solid #dc3545;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .ingredient-error {
+    color: #dc3545;
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.9rem;
+  }
+
+  /* Ingredient List Styles */
+  .ingredient-list-scroll {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  .ingredient-list {
+    padding: 0;
+  }
+
+  .ingredient-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f8f9fa;
+    transition: background-color 0.2s ease;
+  }
+
+  .ingredient-item:last-child {
+    border-bottom: none;
+  }
+
+  .ingredient-item:hover {
+    background: #f8f9fa;
+  }
+
+  .ingredient-number {
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .ingredient-number.healthy {
+    background: #198754;
+    color: white;
+  }
+
+  .ingredient-number.nogo {
+    background: #dc3545;
+    color: white;
+  }
+
+  .ingredient-text {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #495057;
+    flex: 1;
+    line-height: 1.4;
+  }
+
+  .ingredient-text.nogo {
+    color: #dc3545;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  .ingredient-text.nogo:hover {
+    color: #b02a37;
+    background: rgba(220, 53, 69, 0.1);
+    border-radius: 4px;
+    padding: 2px 4px;
+    margin: -2px -4px;
+  }
+
+  /* Custom scrollbar for ingredient list */
+  .ingredient-list-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .ingredient-list-scroll::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 3px;
+  }
+
+  .ingredient-list-scroll::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 3px;
+  }
+
+  .ingredient-list-scroll::-webkit-scrollbar-thumb:hover {
+    background: #adb5bd;
+  }
+
+  @media (max-width: 480px) {
+    .ingredient-list-scroll {
+      max-height: 240px;
+    }
+
+    .ingredient-item {
+      padding: 0.5rem 0.7rem;
+      gap: 0.5rem;
+    }
+
+    .ingredient-number {
+      width: 20px;
+      height: 20px;
+      font-size: 0.7rem;
+    }
+
+    .ingredient-text {
+      font-size: 0.85rem;
+    }
+  }
+
+  /* Image Tab Styles */
+  .image-section {
+    padding: 0;
+  }
+
+  .scanned-image-container {
+    text-align: center;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .scanned-image {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .no-image-message {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+  }
+
+  @media (max-width: 480px) {
+    .scanned-image {
+      max-height: 300px;
+    }
+    
+    .scanned-image-container {
+      padding: 0.5rem;
+    }
+  }
+
+  /* Result Card Styles */
+  .result-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    padding: 1.5rem;
+    border: 1px solid #e9ecef;
+  }
+</style>
+<div class="container mt-5" style="max-width: 700px;">
+  <a href="{{ url_for('dashboard') }}" class="btn btn-link mb-3">&larr; Back to Dashboard</a>
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h4 class="mb-0">Scan Details</h4>
+      <span class="text-muted small">{{ scan.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
+    </div>
+    <div class="card-body">
+      <!-- Combined Scan & Recommendation Card -->
+      <div class="tabbed-result-card mb-4">
+        <div class="tab-header">
+          <button class="tab-button active" onclick="switchScanTab('scan', event)">
+            Scan
+          </button>
+          <button class="tab-button" onclick="switchScanTab('recommendation', event)">
+            Recommendation
+          </button>
+        </div>
+        
+        <div class="tab-content">
+          <div id="scan-tab" class="tab-pane active">
+            {% if scan.image_url %}
+              <div class="image-section">
+                <div class="scanned-image-container">
+                  <img src="{{ scan.image_url }}" alt="Scanned Food Label" class="scanned-image">
+                </div>
+              </div>
+            {% else %}
+              <div class="no-image-message">
+                <p>No image available for this scan.</p>
+              </div>
+            {% endif %}
+          </div>
+          
+          <div id="recommendation-tab" class="tab-pane">
+            <div class="recommendation-section">
+              {% set flag = scan.scan_data['recommendation']['flag'] %}
+              {% set is_nogo = flag == 'NoGo' %}
+              <div class="recommendation {{ flag.lower() }}" style="border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; {% if is_nogo %}background: linear-gradient(135deg, #fff5f5, #fef2f2); border: 2px solid #fecaca;{% else %}background: linear-gradient(135deg, #f0fdf4, #f7fee7); border: 2px solid #bbf7d0;{% endif %}">
+                <div class="recommendation-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                  <h3 style="margin: 0; font-size: 1.5rem; font-weight: 700; {% if is_nogo %}color: #dc3545;{% else %}color: #198754;{% endif %}">{{ flag }}</h3>
+                  <span style="font-size: 2rem;">{% if is_nogo %}⚠️{% else %}✅{% endif %}</span>
+                </div>
+                {% if scan.scan_data['recommendation']['flagged_tokens'] %}
+                  <div class="flagged-ingredients" style="background: rgba(220, 53, 69, 0.1); border-radius: 8px; padding: 1rem;">
+                    <p style="margin-bottom: 0.75rem;"><strong>Concerning ingredients:</strong></p>
+                    <div class="dashboard-flagged-ingredients-scroll">
+                      {% for ingredient in scan.scan_data['recommendation']['flagged_tokens'] %}
+                        <div class="dashboard-flagged-ingredient-item">
+                          <span class="dashboard-ingredient-flag-number">{{ loop.index }}</span>
+                          <span class="dashboard-ingredient-flag-text">{{ ingredient }}</span>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabbed Analysis & Comment Card -->
+      <div class="tabbed-result-card">
+        <div class="tab-header">
+          <button class="tab-button active" onclick="switchAnalysisTab('ingredients', event)">
+            Ingredients
+          </button>
+          <button class="tab-button" onclick="switchAnalysisTab('comments', event)">
+            Comments
+          </button>
+        </div>
+        
+        <div class="tab-content">          
+          <div id="ingredients-tab" class="tab-pane active">
+            <div class="ingredients-section">
+              <div class="ingredient-list-scroll">
+                <div class="ingredient-list">
+                  {% if scan.scan_data.get('tokenized_ingredients') %}
+                    {% set ingredients = scan.scan_data['tokenized_ingredients'] %}
+                    {% set flagged_tokens = scan.scan_data['recommendation']['flagged_tokens'] if scan.scan_data['recommendation'] else [] %}
+                    {% set ingredient_counter = [0] %}
+                    {% for ingredient in ingredients %}
+                      {% if ingredient and ingredient|length > 0 %}
+                        {% if ingredient_counter.append(ingredient_counter.pop() + 1) %}{% endif %}
+                        {% set is_flagged = ingredient in flagged_tokens %}
+                        <div class="ingredient-item">
+                          <span class="ingredient-number {{ 'nogo' if is_flagged else 'healthy' }}">{{ ingredient_counter[0] }}</span>
+                          <span class="ingredient-text {{ 'nogo' if is_flagged else '' }}">{{ ingredient }}</span>
+                        </div>
+                      {% endif %}
+                    {% endfor %}
+                  {% elif scan.scan_data.get('raw_content') %}
+                    {% set ingredients = scan.scan_data['raw_content'].split(',') %}
+                    {% set flagged_tokens = scan.scan_data['recommendation']['flagged_tokens'] if scan.scan_data['recommendation'] else [] %}
+                    {% set ingredient_counter = [0] %}
+                    {% for ingredient in ingredients %}
+                      {% set clean_ingredient = ingredient.strip().replace('{', '').replace('}', '').replace('"', '').replace('[', '').replace(']', '') %}
+                      {% if clean_ingredient and clean_ingredient|length > 0 and not clean_ingredient.startswith('ingredients') %}
+                        {% if ingredient_counter.append(ingredient_counter.pop() + 1) %}{% endif %}
+                        {% set is_flagged = false %}
+                        {% for flagged_token in flagged_tokens %}
+                          {% if not is_flagged %}
+                            {% set clean_flagged = flagged_token.strip().lower().replace('.', '').replace(',', '').replace('(', '').replace(')', '').replace('"', '').replace("'", '').replace('[', '').replace(']', '').replace('{', '').replace('}', '') %}
+                            {% set clean_ingredient_lower = clean_ingredient.strip().lower().replace('.', '').replace(',', '').replace('(', '').replace(')', '').replace('"', '').replace("'", '').replace('[', '').replace(']', '').replace('{', '').replace('}', '') %}
+                            {% if clean_flagged == clean_ingredient_lower or 
+                                 clean_flagged.replace(' ', '') == clean_ingredient_lower.replace(' ', '') or
+                                 (clean_flagged|length > 2 and clean_flagged in clean_ingredient_lower) or 
+                                 (clean_ingredient_lower|length > 2 and clean_ingredient_lower in clean_flagged) or
+                                 (clean_flagged.replace(' ', '').replace('-', '') == clean_ingredient_lower.replace(' ', '').replace('-', '')) %}
+                              {% set is_flagged = true %}
+                            {% endif %}
+                          {% endif %}
+                        {% endfor %}
+                        <div class="ingredient-item">
+                          <span class="ingredient-number {{ 'nogo' if is_flagged else 'healthy' }}">{{ ingredient_counter[0] }}</span>
+                          <span class="ingredient-text {{ 'nogo' if is_flagged else '' }}">{{ clean_ingredient }}</span>
+                        </div>
+                      {% endif %}
+                    {% endfor %}
+                  {% else %}
+                    <div class="ingredient-item">
+                      <span class="ingredient-number healthy">1</span>
+                      <span class="ingredient-text">No ingredients data available</span>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div id="comments-tab" class="tab-pane">
+            <div class="comment-section">
+              <!-- Existing Comments -->
+              {% if scan.scan_comments %}
+                <div class="existing-comments mb-4">
+                  <h6 class="mb-3">Previous Comments</h6>
+                  {% for comment in scan.scan_comments|reverse %}
+                    <div class="comment-item" style="background: #f8f9fa; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; border-left: 3px solid #0dcaf0;">
+                      <div class="comment-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <div class="comment-meta" style="font-size: 0.8rem; color: #6c757d;">
+                          📅 {{ comment.timestamp.strftime('%Y-%m-%d %H:%M') }}
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteComment({{ comment.id }})" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;">
+                          🗑️ Delete
+                        </button>
+                      </div>
+                      <div class="comment-text">{{ comment.comment_text }}</div>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% elif scan.comments and scan.comments.strip() %}
+                <div class="existing-comments mb-4">
+                  <h6 class="mb-3">Previous Comment</h6>
+                  <div class="comment-item" style="background: #f8f9fa; border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; border-left: 3px solid #0dcaf0;">
+                    <div class="comment-meta" style="font-size: 0.8rem; color: #6c757d; margin-bottom: 0.5rem;">
+                      📅 {{ scan.timestamp.strftime('%Y-%m-%d %H:%M') }} (Legacy comment)
+                    </div>
+                    <div class="comment-text">{{ scan.comments }}</div>
+                  </div>
+                </div>
+              {% endif %}
+              
+              <!-- Add New Comment -->
+              <div class="add-comment">
+                <h6 class="mb-3">Add New Comment</h6>
+                <form method="POST" action="{{ url_for('add_comment', scan_id=scan.id) }}">
+                  <div class="form-group mb-3">
+                    <textarea class="form-control" id="new_comment" name="new_comment" rows="4" placeholder="Add your thoughts about this scan..." style="border-radius: 8px; border: 1px solid #ddd; padding: 0.75rem;"></textarea>
+                  </div>
+                  <div class="text-center">
+                    <button class="btn btn-primary" type="submit" style="min-width: 120px;">
+                      💬 Add Comment
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Ingredient Explanation Modal -->
+<div id="ingredientModal" class="ingredient-modal">
+  <div class="ingredient-modal-content">
+    <div class="ingredient-modal-header">
+      <h3 class="ingredient-modal-title">
+        <span>⚠️</span>
+        <span id="modalIngredientName">Ingredient Name</span>
+      </h3>
+      <button class="ingredient-modal-close" id="closeModal">&times;</button>
+    </div>
+    <div class="ingredient-modal-body">
+      <div id="modalContent">
+        <div class="ingredient-loading">
+          <div class="ingredient-loading-spinner"></div>
+          <span>Getting explanation...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Modal elements
+const ingredientModal = document.getElementById('ingredientModal');
+const modalIngredientName = document.getElementById('modalIngredientName');
+const modalContent = document.getElementById('modalContent');
+const closeModal = document.getElementById('closeModal');
+
+// Ingredient explanation cache
+const explanationCache = new Map();
+
+// Modal functionality
+function showIngredientModal(ingredientName) {
+  modalIngredientName.textContent = ingredientName;
+  
+  // Show loading state
+  modalContent.innerHTML = `
+    <div class="ingredient-loading">
+      <div class="ingredient-loading-spinner"></div>
+      <span>Getting explanation...</span>
+    </div>
+  `;
+  
+  ingredientModal.style.display = 'block';
+  
+  // Check cache first
+  if (explanationCache.has(ingredientName.toLowerCase())) {
+    const cachedExplanation = explanationCache.get(ingredientName.toLowerCase());
+    
+    // Display cached explanation (simple text format)
+    modalContent.innerHTML = `<p class="ingredient-explanation">${cachedExplanation}</p>`;
+    return;
+  }
+  
+  // Fetch explanation from API
+  fetch('/api/ingredient-explanation', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ ingredient: ingredientName })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.error) {
+      modalContent.innerHTML = `<div class="ingredient-error">Unable to get explanation: ${data.error}</div>`;
+    } else {
+      const explanation = data.explanation;
+      explanationCache.set(ingredientName.toLowerCase(), explanation);
+      modalContent.innerHTML = `<p class="ingredient-explanation">${explanation}</p>`;
+    }
+  })
+  .catch(error => {
+    console.error('Error fetching ingredient explanation:', error);
+    modalContent.innerHTML = `<div class="ingredient-error">Unable to get explanation. Please try again.</div>`;
+  });
+}
+
+function hideIngredientModal() {
+  ingredientModal.style.display = 'none';
+}
+
+// Close modal when clicking the close button
+closeModal.addEventListener('click', hideIngredientModal);
+
+// Close modal when clicking outside the modal content
+ingredientModal.addEventListener('click', function(event) {
+  if (event.target === ingredientModal) {
+    hideIngredientModal();
+  }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape' && ingredientModal.style.display === 'block') {
+    hideIngredientModal();
+  }
+});
+
+// Delete comment function
+function deleteComment(commentId) {
+  if (confirm('Are you sure you want to delete this comment?')) {
+    fetch(`/scan/comment/${commentId}/delete`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Reload the page to show updated comments
+        window.location.reload();
+      } else {
+        alert('Failed to delete comment: ' + (data.message || 'Unknown error'));
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Failed to delete comment. Please try again.');
+    });
+  }
+}
+
+// Add click handlers to dashboard ingredient items and NoGo ingredients
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.dashboard-flagged-ingredient-item').forEach(item => {
+    item.addEventListener('click', function() {
+      const ingredientText = this.querySelector('.dashboard-ingredient-flag-text').textContent.trim();
+      showIngredientModal(ingredientText);
+    });
+  });
+  
+  // Add click handlers to NoGo ingredient text in ingredients list
+  document.querySelectorAll('.ingredient-text.nogo').forEach(item => {
+    item.addEventListener('click', function() {
+      const ingredientText = this.textContent.trim();
+      showIngredientModal(ingredientText);
+    });
+  });
+  
+  // Check if URL has #comments fragment and switch to comments tab
+  if (window.location.hash === '#comments') {
+    switchAnalysisTab('comments', { target: document.querySelector('button[onclick*="comments"]') });
+  }
+});
+
+// Separate function for Scan/Recommendation tabs
+function switchScanTab(tabName, event) {
+  // Get the parent card to limit scope
+  const parentCard = event.target.closest('.tabbed-result-card');
+  
+  // Remove active class from scan tab buttons only
+  const scanTabButtons = parentCard.querySelectorAll('.tab-header .tab-button');
+  scanTabButtons.forEach(button => button.classList.remove('active'));
+  
+  // Remove active class from scan tab panes only
+  const scanTabPanes = parentCard.querySelectorAll('.tab-pane');
+  scanTabPanes.forEach(pane => pane.classList.remove('active'));
+  
+  // Add active class to clicked tab button
+  if (event && event.target) {
+    event.target.classList.add('active');
+  }
+  
+  // Show corresponding tab pane
+  const targetTab = document.getElementById(`${tabName}-tab`);
+  if (targetTab) {
+    targetTab.classList.add('active');
+  }
+}
+
+// Separate function for Details/Ingredients/Comments tabs
+function switchAnalysisTab(tabName, event) {
+  // Get the parent card to limit scope
+  const parentCard = event.target.closest('.tabbed-result-card');
+  
+  // Remove active class from analysis tab buttons only
+  const analysisTabButtons = parentCard.querySelectorAll('.tab-header .tab-button');
+  analysisTabButtons.forEach(button => button.classList.remove('active'));
+  
+  // Remove active class from analysis tab panes only
+  const analysisTabPanes = parentCard.querySelectorAll('.tab-pane');
+  analysisTabPanes.forEach(pane => pane.classList.remove('active'));
+  
+  // Add active class to clicked tab button
+  if (event && event.target) {
+    event.target.classList.add('active');
+  }
+  
+  // Show corresponding tab pane
+  const targetTab = document.getElementById(`${tabName}-tab`);
+  if (targetTab) {
+    targetTab.classList.add('active');
+  }
+}
+</script>
+{% endblock %} 

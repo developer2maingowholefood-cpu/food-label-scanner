@@ -1,0 +1,214 @@
+{
+    "raw_content": "{\"ingredients\": \"Rolled Oats (25.1%), Candied Fruit and Nut (24%) {Candied Cranberry (14%), Almonds (10%)}, Sugar, Oat Flour (10.7%), Edible Vegetable Oil (Palmolein), Rice (4.2%), Whole Wheat (3.9%), Rice Flour (2.7%), Liquid Glucose, Corn Flour (1.8%), Honey, Malt Extract, Wheat Bran (0.6%), Wheat Flour (0.5%), Iodized Salt, Dextrose, Barley Flour (0.1%), Vitamins, Raising Agent (INS 500ii), Minerals, Antioxidant (INS 320), Nature Identical and Artificial Cream Flavouring Substances\"}",
+    "tokenized_ingredients": [
+        "25.1",
+        "24",
+        "14",
+        "10",
+        "10.7",
+        "Palmolein",
+        "4.2",
+        "3.9",
+        "2.7",
+        "1.8",
+        "0.6",
+        "0.5",
+        "0.1",
+        "INS 500ii",
+        "INS 320",
+        "Rolled Oats",
+        "Candied Fruit and Nut  {Candied Cranberry",
+        "Almonds ",
+        "Sugar",
+        "Oat Flour",
+        "Edible Vegetable Oil",
+        "Rice",
+        "Whole Wheat",
+        "Rice Flour",
+        "Liquid Glucose",
+        "Corn Flour",
+        "Honey",
+        "Malt Extract",
+        "Wheat Bran",
+        "Wheat Flour",
+        "Iodized Salt",
+        "Dextrose",
+        "Barley Flour",
+        "Vitamins",
+        "Raising Agent",
+        "Minerals",
+        "Antioxidant",
+        "Nature Identical and Artificial Cream Flavouring Substances"
+    ],
+    "recommendation": {
+        "flag": "NoGo",
+        "reason": "Contains concerning ingredients from categories: Starches, General, Sweeteners, Grains",
+        "found_terms": {
+            "SUGAR": 100,
+            "OAT FLOUR": 100,
+            "RICE": 100,
+            "RICE FLOUR": 100,
+            "CORN FLOUR": 100,
+            "HONEY": 100,
+            "WHEAT FLOUR": 100,
+            "IODIZED SALT": 100,
+            "DEXTROSE": 100,
+            "BARLEY FLOUR": 100
+        },
+        "categories": [
+            "Starches",
+            "General",
+            "Sweeteners",
+            "Grains"
+        ],
+        "flagged_tokens": [
+            "Rice Flour",
+            "Wheat Flour",
+            "Oat Flour",
+            "Rice",
+            "Honey",
+            "Barley Flour",
+            "Iodized Salt",
+            "Sugar",
+            "Dextrose",
+            "Corn Flour"
+        ],
+        "token_matches": {
+            "Sugar": [
+                {
+                    "nogo": "SUGAR",
+                    "score": 100,
+                    "category": "Sweeteners"
+                }
+            ],
+            "Oat Flour": [
+                {
+                    "nogo": "OAT FLOUR",
+                    "score": 100,
+                    "category": "Starches"
+                }
+            ],
+            "Rice": [
+                {
+                    "nogo": "RICE",
+                    "score": 100,
+                    "category": "Grains"
+                }
+            ],
+            "Rice Flour": [
+                {
+                    "nogo": "RICE FLOUR",
+                    "score": 100,
+                    "category": "Starches"
+                }
+            ],
+            "Corn Flour": [
+                {
+                    "nogo": "CORN FLOUR",
+                    "score": 100,
+                    "category": "Starches"
+                }
+            ],
+            "Honey": [
+                {
+                    "nogo": "HONEY",
+                    "score": 100,
+                    "category": "Sweeteners"
+                }
+            ],
+            "Wheat Flour": [
+                {
+                    "nogo": "WHEAT FLOUR",
+                    "score": 100,
+                    "category": "Starches"
+                }
+            ],
+            "Iodized Salt": [
+                {
+                    "nogo": "IODIZED SALT",
+                    "score": 100,
+                    "category": "General"
+                }
+            ],
+            "Dextrose": [
+                {
+                    "nogo": "DEXTROSE",
+                    "score": 100,
+                    "category": "Sweeteners"
+                }
+            ],
+            "Barley Flour": [
+                {
+                    "nogo": "BARLEY FLOUR",
+                    "score": 100,
+                    "category": "Starches"
+                }
+            ]
+        }
+    },
+    "debug_info": {
+        "normalized_text": "",
+        "matches": [
+            {
+                "token": "Sugar",
+                "normalized": "SUGAR",
+                "ingredient": "Sugar",
+                "category": "Sweeteners"
+            },
+            {
+                "token": "Oat Flour (10.7%)",
+                "normalized": "OAT FLOUR",
+                "ingredient": "oat flour",
+                "category": "Starches"
+            },
+            {
+                "token": "Rice (4.2%)",
+                "normalized": "RICE",
+                "ingredient": "rice",
+                "category": "Grains"
+            },
+            {
+                "token": "Rice Flour (2.7%)",
+                "normalized": "RICE FLOUR",
+                "ingredient": "rice flour",
+                "category": "Starches"
+            },
+            {
+                "token": "Corn Flour (1.8%)",
+                "normalized": "CORN FLOUR",
+                "ingredient": "corn flour",
+                "category": "Starches"
+            },
+            {
+                "token": "Honey",
+                "normalized": "HONEY",
+                "ingredient": "Honey",
+                "category": "Sweeteners"
+            },
+            {
+                "token": "Wheat Flour (0.5%)",
+                "normalized": "WHEAT FLOUR",
+                "ingredient": "WHEAT FLOUR",
+                "category": "Starches"
+            },
+            {
+                "token": "Iodized Salt",
+                "normalized": "IODIZED SALT",
+                "ingredient": "IODIZED SALT",
+                "category": "General"
+            },
+            {
+                "token": "Dextrose",
+                "normalized": "DEXTROSE",
+                "ingredient": "Dextrose",
+                "category": "Sweeteners"
+            },
+            {
+                "token": "Barley Flour (0.1%)",
+                "normalized": "BARLEY FLOUR",
+                "ingredient": "barley flour",
+                "category": "Starches"
+            }
+        ]
+    }
+}

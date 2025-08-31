@@ -1,0 +1,1106 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  /* Fixed viewport for scan page - prevent scrolling */
+  html, body {
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    left: 0;
+  }
+  
+  /* Override bootstrap's min-vh-100 for fixed layout */
+  .scan-page-container {
+    height: 100vh;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .scan-content-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 1rem;
+  }
+  
+  .scan-card {
+    max-width: 400px;
+    width: 100%;
+    max-height: calc(100vh - 140px); /* Account for navbar and footer */
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  
+  /* Custom scrollbar for scan card content */
+  .scan-card::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .scan-card::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scan-card::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.2);
+    border-radius: 2px;
+  }
+  
+  /* Fixed footer positioning */
+  .fixed-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: transparent;
+    z-index: 10;
+    padding: 8px 0;
+  }
+  
+  /* Ensure navbar stays fixed */
+  .navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1030;
+  }
+
+  .floating-camera-btn {
+    position: fixed;
+    bottom: 45px; /* Moved up to not overlap with fixed footer */
+    right: 32px;
+    z-index: 1060; /* Above footer */
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    background: #198754;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    border: none;
+    transition: background 0.2s;
+  }
+  .floating-camera-btn:hover {
+    background: #157347;
+  }
+  @media (max-width: 600px) {
+    .floating-camera-btn {
+      bottom: 16px;
+      right: 16px;
+      width: 56px;
+      height: 56px;
+      font-size: 1.7rem;
+    }
+  }
+
+  /* Progress Bar Styles */
+  .progress-container {
+    text-align: center;
+    padding: 2rem 1rem;
+  }
+  
+  .progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+  
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #198754, #20c997);
+    border-radius: 10px;
+    width: 0%;
+    animation: progressAnimation 3s ease-in-out infinite;
+  }
+  
+  @keyframes progressAnimation {
+    0% { width: 0%; }
+    50% { width: 70%; }
+    100% { width: 100%; }
+  }
+  
+  .progress-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 1.5rem;
+  }
+  
+  .progress-steps {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  
+  .step {
+    font-size: 0.85rem;
+    color: #6c757d;
+    padding: 0.5rem;
+    border-radius: 8px;
+    background: #f8f9fa;
+    flex: 1;
+    min-width: 100px;
+    transition: all 0.3s ease;
+  }
+  
+  .step.active {
+    background: #d1e7dd;
+    color: #198754;
+    font-weight: 600;
+  }
+  
+  /* Results Container Styles */
+  .results-container {
+    margin-top: 1rem;
+  }
+  
+  .result-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e9ecef;
+  }
+  
+  .recommendation-section .recommendation {
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .recommendation.nogo {
+    background: linear-gradient(135deg, #fff5f5, #fef2f2);
+    border: 2px solid #fecaca;
+  }
+  
+  .recommendation.healthy {
+    background: linear-gradient(135deg, #f0fdf4, #f7fee7);
+    border: 2px solid #bbf7d0;
+  }
+  
+  .recommendation-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  
+  .recommendation-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+  
+  .recommendation.nogo .recommendation-header h3 {
+    color: #dc3545;
+  }
+  
+  .recommendation.healthy .recommendation-header h3 {
+    color: #198754;
+  }
+  
+  .recommendation-header span {
+    font-size: 2rem;
+  }
+  
+  .flagged-ingredients {
+    background: rgba(220, 53, 69, 0.1);
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  
+  .flagged-ingredients-scroll {
+    max-height: 160px;
+    overflow-y: auto;
+    margin-top: 0.75rem;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.5);
+  }
+  
+  .flagged-ingredient-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid rgba(220, 53, 69, 0.1);
+    transition: background-color 0.2s ease;
+  }
+  
+  .flagged-ingredient-item:last-child {
+    border-bottom: none;
+  }
+  
+  .flagged-ingredient-item:hover {
+    background: rgba(220, 53, 69, 0.05);
+  }
+  
+  .ingredient-flag-number {
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(220, 53, 69, 0.3);
+  }
+  
+  .ingredient-flag-text {
+    color: #dc3545;
+    font-weight: 600;
+    font-size: 0.9rem;
+    line-height: 1.3;
+    flex: 1;
+  }
+  
+  /* Custom scrollbar styling */
+  .flagged-ingredients-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .flagged-ingredients-scroll::-webkit-scrollbar-track {
+    background: rgba(220, 53, 69, 0.1);
+    border-radius: 3px;
+  }
+  
+  .flagged-ingredients-scroll::-webkit-scrollbar-thumb {
+    background: rgba(220, 53, 69, 0.4);
+    border-radius: 3px;
+  }
+  
+  .flagged-ingredients-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(220, 53, 69, 0.6);
+  }
+  
+  .analysis-section {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+  
+  .analysis-section h2 {
+    color: #495057;
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+  
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #dee2e6;
+  }
+  
+  .stat-row:last-child {
+    border-bottom: none;
+  }
+  
+  .stat-label {
+    font-weight: 600;
+    color: #495057;
+  }
+  
+  .stat-value {
+    font-weight: 700;
+    color: #198754;
+  }
+  
+  .stat-value.warning {
+    color: #ffc107;
+  }
+  
+  .stat-value.danger {
+    color: #dc3545;
+  }
+  
+  .toggle-button {
+    background: #0d6efd;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background 0.2s;
+    display: block;
+    margin: 0 auto;
+    width: fit-content;
+  }
+  
+  .toggle-button:hover {
+    background: #0b5ed7;
+  }
+  
+  .ingredient-list {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+  }
+  
+  .ingredient-list ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+  }
+  
+  .ingredient-list li {
+    padding: 0.75rem 1rem;
+    color: #495057;
+    background: #f8f9fa;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    text-align: left;
+    border: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .ingredient-number {
+    background: #198754;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  
+  .new-scan-section {
+    text-align: center;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+    border-radius: 12px;
+    margin-top: 1rem;
+  }
+  
+  .btn-new-scan {
+    background: linear-gradient(135deg, #198754, #20c997);
+    color: white;
+    border: none;
+    padding: 0.875rem 2.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+    box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
+    display: block;
+    margin: 0 auto;
+  }
+  
+  .btn-new-scan:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(25, 135, 84, 0.4);
+  }
+  
+  /* Not Food Product Message Styles */
+  .not-food-product-message {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 16px;
+    border: 2px solid #dee2e6;
+  }
+  
+  .not-food-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    opacity: 0.8;
+  }
+  
+  .not-food-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #495057;
+    margin-bottom: 1rem;
+    letter-spacing: -0.025em;
+  }
+  
+  .not-food-description {
+    font-size: 1rem;
+    color: #6c757d;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .btn-try-again {
+    background: linear-gradient(135deg, #6f42c1, #8b5cf6);
+    color: white;
+    border: none;
+    padding: 0.875rem 2rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(111, 66, 193, 0.3);
+    display: inline-block;
+  }
+  
+  .btn-try-again:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(111, 66, 193, 0.4);
+    background: linear-gradient(135deg, #5d3a9b, #7c3aed);
+  }
+  
+  .btn-try-again:active {
+    transform: translateY(0);
+  }
+
+  /* Force hide button during processing */
+  .processing .button-group,
+  .processing #processBtnGroup,
+  .processing #scanProcessBtn {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Compact image during processing */
+  .processing #imagePreviewContainer {
+    transform: scale(0.4);
+    transform-origin: center top;
+    transition: transform 0.4s ease;
+    margin-bottom: -60%;
+    max-height: 120px;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Hide overlay during processing */
+  .processing .image-overlay {
+    display: none !important;
+  }
+
+  /* Normal state image */
+  #imagePreviewContainer {
+    transition: transform 0.4s ease;
+  }
+
+  /* Ensure image container doesn't overflow */
+  .processing #imagePreview {
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Image Overlay Styles */
+  .image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 10;
+  }
+
+  .image-overlay.show {
+    opacity: 1;
+  }
+
+  .overlay-process-btn {
+    background: linear-gradient(135deg, #198754, #20c997);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 16px 32px;
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 8px 24px rgba(25, 135, 84, 0.3);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    transform: scale(0.95);
+    animation: overlayPulse 2s infinite;
+  }
+
+  .overlay-process-btn:hover {
+    transform: scale(1);
+    box-shadow: 0 12px 32px rgba(25, 135, 84, 0.4);
+    background: linear-gradient(135deg, #20c997, #198754);
+  }
+
+  .overlay-process-btn:active {
+    transform: scale(0.95);
+  }
+
+  .overlay-process-btn .btn-icon {
+    font-size: 24px;
+    animation: overlayIconSpin 3s linear infinite;
+  }
+
+  .overlay-process-btn .btn-text {
+    font-size: 16px;
+    letter-spacing: 0.5px;
+  }
+
+  @keyframes overlayPulse {
+    0%, 100% { 
+      transform: scale(0.95);
+      box-shadow: 0 8px 24px rgba(25, 135, 84, 0.3);
+    }
+    50% { 
+      transform: scale(1);
+      box-shadow: 0 12px 32px rgba(25, 135, 84, 0.4);
+    }
+  }
+
+  @keyframes overlayIconSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Mobile responsiveness for overlay */
+  @media (max-width: 600px) {
+    .overlay-process-btn {
+      padding: 14px 28px;
+      font-size: 16px;
+    }
+    
+    .overlay-process-btn .btn-icon {
+      font-size: 20px;
+    }
+    
+    .overlay-process-btn .btn-text {
+      font-size: 14px;
+    }
+  }
+
+  /* Ensure loading progress appears below scaled image */
+  .processing #loading {
+    position: relative;
+    z-index: 10;
+    margin-top: 1rem;
+  }
+
+  /* Tabbed Card Styles */
+  .tabbed-result-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+    border: 1px solid #e9ecef;
+    overflow: hidden;
+  }
+
+  .tab-header {
+    display: flex;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  .tab-button {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 3px solid transparent;
+  }
+
+  .tab-button:hover {
+    background: #e9ecef;
+    color: #495057;
+  }
+
+  .tab-button.active {
+    background: white;
+    color: #198754;
+    border-bottom-color: #198754;
+  }
+
+  .tab-content {
+    padding: 1.5rem;
+  }
+
+  .tab-pane {
+    display: none;
+  }
+
+  .tab-pane.active {
+    display: block;
+  }
+
+  /* Ingredient explanation modal */
+  .ingredient-modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+  }
+
+  .ingredient-modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 0;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease-out;
+    position: relative;
+  }
+
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-50px) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .ingredient-modal-header {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 16px 16px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .ingredient-modal-title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .ingredient-modal-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+  }
+
+  .ingredient-modal-close:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .ingredient-modal-body {
+    padding: 1.5rem;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .ingredient-explanation {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #495057;
+    margin: 0;
+  }
+
+  .ingredient-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 2rem;
+    color: #6c757d;
+  }
+
+  .ingredient-loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e9ecef;
+    border-left: 2px solid #dc3545;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .ingredient-error {
+    color: #dc3545;
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.9rem;
+  }
+
+  /* Make ingredient items clickable */
+  .flagged-ingredient-item {
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+  }
+
+  .flagged-ingredient-item:hover {
+    background: rgba(220, 53, 69, 0.1);
+    transform: translateY(-1px);
+  }
+
+  .flagged-ingredient-item:active {
+    transform: translateY(0);
+  }
+
+  /* Dashboard ingredient items */
+  .dashboard-flagged-ingredient-item {
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+  }
+
+  .dashboard-flagged-ingredient-item:hover {
+    background: rgba(220, 53, 69, 0.1);
+    transform: translateY(-1px);
+  }
+
+  .dashboard-flagged-ingredient-item:active {
+    transform: translateY(0);
+  }
+
+  @media (max-width: 480px) {
+    .progress-steps {
+      flex-direction: column;
+    }
+    
+    .ingredient-list ul {
+      grid-template-columns: 1fr;
+    }
+    
+    .ingredient-list li {
+      padding: 0.5rem 0.75rem;
+    }
+    
+    .stat-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+    }
+    
+    .not-food-product-message {
+      padding: 2rem 1rem;
+    }
+    
+    .not-food-icon {
+      font-size: 3rem;
+    }
+    
+    .not-food-title {
+      font-size: 1.3rem;
+    }
+    
+    .not-food-description {
+      font-size: 0.9rem;
+    }
+
+    .btn-try-again {
+      padding: 0.75rem 1.5rem;
+      font-size: 0.9rem;
+    }
+    
+    .flagged-ingredients-scroll {
+      max-height: 140px;
+    }
+    
+    .flagged-ingredient-item {
+      padding: 0.5rem 0.7rem;
+      gap: 0.5rem;
+    }
+    
+    .ingredient-flag-number {
+      width: 20px;
+      height: 20px;
+      font-size: 0.7rem;
+    }
+    
+    .ingredient-flag-text {
+      font-size: 0.85rem;
+    }
+
+    /* Mobile-optimized processing image */
+    .processing #imagePreviewContainer {
+      transform: scale(0.5);
+      margin-bottom: -50%;
+      max-height: 150px;
+    }
+
+    .ingredient-list-scroll {
+      max-height: 240px;
+    }
+
+    .ingredient-item {
+      padding: 0.5rem 0.7rem;
+      gap: 0.5rem;
+    }
+
+    .ingredient-number {
+      width: 20px;
+      height: 20px;
+      font-size: 0.7rem;
+    }
+
+    .ingredient-text {
+      font-size: 0.85rem;
+    }
+  }
+
+  /* Ingredient List Styles */
+  .ingredient-list-scroll {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  .ingredient-list {
+    padding: 0;
+  }
+
+  .ingredient-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f8f9fa;
+    transition: background-color 0.2s ease;
+  }
+
+  .ingredient-item:last-child {
+    border-bottom: none;
+  }
+
+  .ingredient-item:hover {
+    background: #f8f9fa;
+  }
+
+  .ingredient-number {
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .ingredient-number.healthy {
+    background: #198754;
+    color: white;
+  }
+
+  .ingredient-number.nogo {
+    background: #dc3545;
+    color: white;
+  }
+
+  .ingredient-text {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #495057;
+    flex: 1;
+    line-height: 1.4;
+  }
+
+  /* Custom scrollbar for ingredient list */
+  .ingredient-list-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .ingredient-list-scroll::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 3px;
+  }
+
+  .ingredient-list-scroll::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 3px;
+  }
+
+  .ingredient-list-scroll::-webkit-scrollbar-thumb:hover {
+    background: #adb5bd;
+  }
+
+  /* Image Tab Styles */
+  .image-section {
+    padding: 0;
+  }
+
+  .scanned-image-container {
+    text-align: center;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .scanned-image {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  @media (max-width: 480px) {
+    .scanned-image {
+      max-height: 300px;
+    }
+    
+    .scanned-image-container {
+      padding: 0.5rem;
+    }
+  }
+
+  /* No recommendation message */
+  .no-recommendation {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+    font-style: italic;
+  }
+</style>
+<div class="scan-page-container" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+  <div class="scan-content-area">
+    <div class="card shadow-lg p-4 scan-card" style="border-radius: 18px;">
+    <!-- <div class="text-center mb-4">
+      <p class="text-muted mb-3" style="font-size: 1.1rem;">Scan food labels, extract ingredients, and check for NoGo items instantly.</p>
+    </div> -->
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
+    <div id="welcomeMessage" class="text-center mb-0">
+      <p class="fw-semibold">Ready to scan? Tap the camera button below!</p>
+    </div>
+    <a href="/dashboard" id="dashboardBtn" class="btn btn-outline-primary w-100 mb-3" style="display: none;">View Dashboard</a>
+    <div id="imagePreviewContainer" style="display: none; position: relative;">
+      <img id="imagePreview" style="width: 100%; border-radius: 10px;">
+      <!-- Process Now Button Overlay -->
+      <div id="imageOverlay" class="image-overlay" style="display: none;">
+        <button id="overlayProcessBtn" class="overlay-process-btn">
+          <span class="btn-icon">⚡</span>
+          <span class="btn-text">Process Now</span>
+        </button>
+      </div>
+    </div>
+    <!-- Hidden legacy button for JavaScript compatibility -->
+    <div class="button-group d-flex justify-content-center mb-3" id="processBtnGroup" style="display: none !important;">
+      <button id="scanProcessBtn" class="btn btn-secondary" style="min-width: 140px; display: none !important;">Process Now</button>
+    </div>
+    <div id="loading" class="loading mt-3" style="display: none;">
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill"></div>
+        </div>
+        <div class="progress-text">Processing your scan...</div>
+        <div class="progress-steps">
+          <span class="step active">📷 Reading Image</span>
+          <span class="step">🔍 Extracting Text</span>
+          <span class="step">✅ Analyzing Ingredients</span>
+        </div>
+      </div>
+    </div>
+      <div id="error" class="error mt-2" style="display: none;"></div>
+      <div id="results" class="results-container"></div>
+    </div>
+  </div>
+  
+  <!-- Fixed Footer -->
+  <div class="fixed-footer">
+    <div class="text-center">
+      <small class="text-muted" style="font-size: 0.7rem; opacity: 0.7;">v{{ app_version }}</small>
+    </div>
+  </div>
+</div>
+<button class="floating-camera-btn" id="floatingCameraBtn" title="Take Photo">
+  <span>📸</span>
+</button>
+
+<!-- Ingredient Explanation Modal -->
+<div id="ingredientModal" class="ingredient-modal">
+  <div class="ingredient-modal-content">
+    <div class="ingredient-modal-header">
+      <h3 class="ingredient-modal-title">
+        <span>⚠️</span>
+        <span id="modalIngredientName">Ingredient Name</span>
+      </h3>
+      <button class="ingredient-modal-close" id="closeModal">&times;</button>
+    </div>
+    <div class="ingredient-modal-body">
+      <div id="modalContent">
+        <div class="ingredient-loading">
+          <div class="ingredient-loading-spinner"></div>
+          <span>Getting explanation...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/index.js?v=20250729213500"></script>
+{% endblock %}
+
+{% block footer %}
+<!-- Footer is handled by fixed-footer div above -->
+{% endblock %}
