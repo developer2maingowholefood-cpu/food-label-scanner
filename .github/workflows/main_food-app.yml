@@ -34,15 +34,12 @@ jobs:
         
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
-      - name: Zip artifact for deployment
-        run: zip -r release.zip . -x "venv/*" ".git/*" "*.pyc" "__pycache__/*" ".DS_Store" "*.log" "local_storage/*" "instance/*"
-
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
         with:
           name: python-app
           path: |
-            release.zip
+            .
             !venv/
 
   deploy:
@@ -57,17 +54,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: python-app
-
-      - name: Unzip artifact for deployment
-        run: unzip release.zip
-
       
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_2DD7AE31B0FF48D09CDC0616B7380773 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_E4E44C2B1F754161A709616C3D650F96 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_AF453D91ACD841BF94FDBCE7C7C74FA3 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_DF538650DDB64ADC8D6E9195CA51D3D2 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_F46F9AB6F8B049879532331F87008E98 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_810910EE930F47E4B3FD6A19F137DABB }}
 
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
@@ -75,4 +68,4 @@ jobs:
         with:
           app-name: 'food-app'
           slot-name: 'Production'
-          package: release.zip
+          
