@@ -1029,6 +1029,16 @@ def home():
 @login_required
 def dashboard():
     scans = Scan.query.filter_by(user_id=current_user.id).order_by(Scan.timestamp.desc()).all()
+    
+    # Generate fresh image URLs on-demand for each scan
+    for scan in scans:
+        if scan.blob_name:
+            try:
+                scan.image_url = blob_service.get_image_url(scan.blob_name)
+            except Exception as e:
+                print(f"Error generating image URL for scan {scan.id}: {str(e)}")
+                scan.image_url = None
+    
     return render_template('dashboard.html', scans=scans)
 
 
@@ -1477,6 +1487,14 @@ def scan_detail(scan_id):
         except Exception as e:
             db.session.rollback()
             print(f"Error saving tokenized ingredients: {e}")
+    
+    # Generate fresh image URL on-demand
+    if scan.blob_name:
+        try:
+            scan.image_url = blob_service.get_image_url(scan.blob_name)
+        except Exception as e:
+            print(f"Error generating image URL for scan {scan.id}: {str(e)}")
+            scan.image_url = None
     
     return render_template('scan_detail.html', scan=scan)
 
